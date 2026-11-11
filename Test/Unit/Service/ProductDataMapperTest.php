@@ -540,4 +540,83 @@ class ProductDataMapperTest extends TestCase
         $this->assertNotNull($group2Entry);
         $this->assertSame(85.0, $group2Entry['price']);
     }
+
+    public function testMapPreservesAbsoluteImageUrlsWithoutPrependingMediaBaseUrl(): void
+    {
+        $externalUrl = 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&w=800&q=80';
+
+        $productStub = new class($externalUrl) extends Product {
+            public function __construct(private readonly string $extUrl)
+            {
+            }
+            public function getId()
+            {
+                return '101';
+            }
+            public function getSku()
+            {
+                return 'EXT-IMG-001';
+            }
+            public function getName()
+            {
+                return 'External Image Product';
+            }
+            public function getDescription()
+            {
+                return 'Desc';
+            }
+            public function getShortDescription()
+            {
+                return 'Short';
+            }
+            public function getPrice()
+            {
+                return 99.00;
+            }
+            public function getSpecialPrice()
+            {
+                return null;
+            }
+            public function getSpecialFromDate()
+            {
+                return null;
+            }
+            public function getSpecialToDate()
+            {
+                return null;
+            }
+            public function getCategoryIds()
+            {
+                return [14];
+            }
+            public function getImage()
+            {
+                return $this->extUrl;
+            }
+            public function getMediaGalleryEntries()
+            {
+                return [];
+            }
+            public function getUrlKey()
+            {
+                return 'external-image-product';
+            }
+            public function getCreatedAt()
+            {
+                return '2026-01-01 00:00:00';
+            }
+            public function getTierPrices()
+            {
+                return [];
+            }
+        };
+
+        $this->isSalableStub->method('execute')->willReturn(true);
+        $this->salableQtyStub->method('execute')->willReturn(10.0);
+
+        $doc = $this->mapper->map($productStub);
+
+        $this->assertSame($externalUrl, $doc['image_url']);
+        $this->assertSame([$externalUrl], $doc['images']);
+    }
 }

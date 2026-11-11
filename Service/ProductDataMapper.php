@@ -130,16 +130,23 @@ class ProductDataMapper
 
         // Images
         $mainImage = $product->getImage();
-        $imageUrl = ($mainImage && $mainImage !== 'no_selection')
-            ? $this->mediaBaseUrl . 'catalog/product' . $mainImage
-            : '';
+        if ($mainImage && $mainImage !== 'no_selection') {
+            $imageUrl = (str_starts_with($mainImage, 'http://') || str_starts_with($mainImage, 'https://'))
+                ? $mainImage
+                : $this->mediaBaseUrl . 'catalog/product' . $mainImage;
+        } else {
+            $imageUrl = '';
+        }
 
         $galleryImages = [];
         $mediaEntries = $product->getMediaGalleryEntries();
         if (!empty($mediaEntries)) {
             foreach ($mediaEntries as $entry) {
                 if ($entry->getFile()) {
-                    $galleryImages[] = $this->mediaBaseUrl . 'catalog/product' . $entry->getFile();
+                    $file = $entry->getFile();
+                    $galleryImages[] = (str_starts_with($file, 'http://') || str_starts_with($file, 'https://'))
+                        ? $file
+                        : $this->mediaBaseUrl . 'catalog/product' . $file;
                 }
             }
         }
