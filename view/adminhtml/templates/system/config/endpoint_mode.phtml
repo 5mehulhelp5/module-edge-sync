@@ -1,0 +1,28 @@
+<?php
+/** @var \MageCopilot\EdgeSync\Block\Adminhtml\System\Config\EndpointMode $block */
+/** @var \Magento\Framework\Escaper $escaper */
+$mode = $block->getEndpointMode();
+$isManaged = ($mode === \MageCopilot\EdgeSync\Block\Adminhtml\System\Config\EndpointMode::MODE_MANAGED_CLOUD);
+$isLocal = ($mode === \MageCopilot\EdgeSync\Block\Adminhtml\System\Config\EndpointMode::MODE_SELF_HOSTED_LOCAL);
+$badgeText = $isManaged
+    ? __('Managed Memory Grid Cloud')
+    : ($isLocal
+        ? __('Self-Hosted / Local Docker')
+        : __('Self-Hosted Remote Node'));
+$helpText = $isManaged
+    ? __('Managed high-availability Typesense cluster endpoint detected.')
+    : __('Self-hosted endpoint detected. EdgeSync CDC operates 100% free and unlocked under OSL-3.0.');
+$bg = $isManaged ? '#0f766e' : '#0284c7';
+$badgeStyle = sprintf(
+    'display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;background:%s;color:#fff;',
+    $bg
+);
+?>
+<div style="padding: 6px 0;">
+    <span style="<?= $escaper->escapeHtmlAttr($badgeStyle) ?>">
+        <?= $escaper->escapeHtml($badgeText) ?>
+    </span>
+    <p class="note" style="margin-top: 6px;">
+        <span><?= $escaper->escapeHtml($helpText) ?></span>
+    </p>
+</div>

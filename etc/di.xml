@@ -1,5 +1,16 @@
 <?xml version="1.0"?>
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="MageCopilot\EdgeSync\Api\TransientBufferInterface"
+                type="MageCopilot\EdgeSync\Service\NullTransientBuffer"/>
+
+    <type name="MageCopilot\EdgeSync\Model\Queue\Consumer">
+        <arguments>
+            <argument name="indexerService" xsi:type="object">MageCopilot\EdgeSync\Service\IndexerService</argument>
+            <argument name="stockResolver" xsi:type="object">Magento\InventorySalesApi\Api\StockResolverInterface</argument>
+            <argument name="transientBuffer" xsi:type="object">MageCopilot\EdgeSync\Api\TransientBufferInterface</argument>
+        </arguments>
+    </type>
+
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>
             <argument name="commands" xsi:type="array">

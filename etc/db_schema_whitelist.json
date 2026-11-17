@@ -1,0 +1,26 @@
+{
+    "magecopilot_edgesync_failure": {
+        "column": {
+            "failure_id": true,
+            "topic": true,
+            "error_class": true,
+            "error_code": true,
+            "sku": true,
+            "entity_id": true,
+            "detail": true,
+            "payload_hash": true,
+            "payload": true,
+            "status": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "MAGECOPILOT_EDGESYNC_FAILURE_STATUS_ERROR_CODE": true,
+            "MAGECOPILOT_EDGESYNC_FAILURE_SKU": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "MAGECOPILOT_EDGESYNC_FAILURE_PAYLOAD_HASH_SKU": true
+        }
+    }
+}

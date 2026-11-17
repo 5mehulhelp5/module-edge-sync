@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace MageCopilot\EdgeSync\Console\Command;
 
+use MageCopilot\EdgeSync\Service\SkuCharsetPolicy;
 use Magento\Framework\App\ResourceConnection;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -14,15 +15,20 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class SkuCharsetReportCommand extends Command
 {
+    private readonly SkuCharsetPolicy $skuCharsetPolicy;
+
     /**
      * @param ResourceConnection $resourceConnection
+     * @param SkuCharsetPolicy|null $skuCharsetPolicy
      * @param string|null $name
      */
     public function __construct(
         private readonly ResourceConnection $resourceConnection,
+        ?SkuCharsetPolicy $skuCharsetPolicy = null,
         ?string $name = null
     ) {
         parent::__construct($name);
+        $this->skuCharsetPolicy = $skuCharsetPolicy ?? new SkuCharsetPolicy();
     }
 
     /**
@@ -53,58 +59,22 @@ class SkuCharsetReportCommand extends Command
             ->where('sku IS NOT NULL');
 
         $rows = $connection->fetchAll($select);
-        $totalSkus = count($rows);
+        $skus = array_map(static fn (array $row): string => (string) ($row['sku'] ?? ''), $rows);
+        $analysis = $this->skuCharsetPolicy->analyzeBatch($skus);
+        $totalSkus = $analysis['total_skus'];
 
         if ($totalSkus === 0) {
             $output->writeln('<comment>No product SKUs found in catalog.</comment>');
             return Command::SUCCESS;
         }
 
-        $minLen = PHP_INT_MAX;
-        $maxLen = 0;
-        $totalLen = 0;
-
-        $specialCharsMap = [];
-        $hasUnicode = false;
-        $hasControlChars = false;
-        $controlCharExamples = [];
-
-        foreach ($rows as $row) {
-            $sku = (string)($row['sku'] ?? '');
-            $len = mb_strlen($sku, 'UTF-8');
-
-            if ($len < $minLen) {
-                $minLen = $len;
-            }
-            if ($len > $maxLen) {
-                $maxLen = $len;
-            }
-            $totalLen += $len;
-
-            // Check for control characters
-            if (preg_match('/[\x00-\x1F\x7F]/', $sku)) {
-                $hasControlChars = true;
-                if (count($controlCharExamples) < 5) {
-                    $controlCharExamples[] = (string)json_encode($sku);
-                }
-            }
-
-            // Check for non-ASCII / Unicode characters
-            if (preg_match('/[^\x00-\x7F]/u', $sku)) {
-                $hasUnicode = true;
-            }
-
-            // Extract all characters outside standard alphanumeric [a-zA-Z0-9]
-            $lenRaw = strlen($sku);
-            for ($i = 0; $i < $lenRaw; $i++) {
-                $char = $sku[$i];
-                if (!ctype_alnum($char)) {
-                    $specialCharsMap[$char] = ($specialCharsMap[$char] ?? 0) + 1;
-                }
-            }
-        }
-
-        $avgLen = round($totalLen / $totalSkus, 2);
+        $minLen = $analysis['min_len'];
+        $maxLen = $analysis['max_len'];
+        $avgLen = $analysis['avg_len'];
+        $hasUnicode = $analysis['has_unicode'];
+        $hasControlChars = $analysis['has_control_chars'];
+        $controlCharExamples = $analysis['control_char_examples'];
+        $specialCharsMap = $analysis['special_chars_map'];
 
         // Render Summary Table
         $table = new Table($output);
@@ -148,8 +118,7 @@ class SkuCharsetReportCommand extends Command
         // Recommend Zod Regex
         $output->writeln('');
         $output->writeln('<info>Recommended Storefront Zod Regex Constraint:</info>');
-        $recommendedRegex = '/^[^\u0000-\u001F\u007F]+$/u';
-        $output->writeln('  ' . $recommendedRegex);
+        $output->writeln('  ' . $analysis['recommended_regex']);
         $output->writeln('  Explanation: Rejects dangerous ASCII control and null bytes while fully supporting');
         $output->writeln('  catalog spaces, symbols, and Unicode characters without false-positive rejects.');
 

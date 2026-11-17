@@ -127,7 +127,7 @@ class SimpleProductSeeder
                 'retailer_price' => 255.00,
                 'special_price' => null,
                 'stock' => 45,
-                'img' => 'https://images.unsplash.com/photo-1539533018447-63fcce667883?auto=format&fit=crop&w=800&q=80',
+                'img' => 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=800&q=80',
                 'desc' => '<p>Technical winter parka insulated with 800-fill-power recycled synthetic down. Finished with fluorocarbon-free DWR water repellency.</p>'
             ],
             [
@@ -225,7 +225,7 @@ class SimpleProductSeeder
                 'retailer_price' => 64.00,
                 'special_price' => null,
                 'stock' => 160,
-                'img' => 'https://images.unsplash.com/photo-1609592426868-b788647565df?auto=format&fit=crop&w=800&q=80',
+                'img' => 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=800&q=80',
                 'desc' => '<p>High-capacity 20,000mAh graphene portable power bank with 65W USB-C Power Delivery, capable of fast-charging laptops, tablets, and smartphones.</p>'
             ]
         ];
@@ -261,7 +261,7 @@ class SimpleProductSeeder
                     'retailer_price' => round($tpl['price'] * 0.82, 2),
                     'special_price' => null,
                     'stock' => 120,
-                    'img' => 'https://images.unsplash.com/photo-1581092335397-9583fe92d232?auto=format&fit=crop&w=800&q=80',
+                    'img' => 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
                     'desc' => "<p>{$name}. Engineered to meet rigorous commercial and industrial specifications. Fully certified under ISO 9001 compliance standards.</p>"
                 ];
             }

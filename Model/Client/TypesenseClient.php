@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace MageCopilot\EdgeSync\Model\Client;
 
+use MageCopilot\EdgeSync\Exception\TransientSyncException;
 use MageCopilot\EdgeSync\Model\Config;
 use Psr\Log\LoggerInterface;
 
@@ -97,6 +98,12 @@ class TypesenseClient
 
         $endpoint = sprintf('/collections/%s/documents/import?action=%s', urlencode($collectionName), urlencode($action));
         $response = $this->rawRequest('POST', $endpoint, $jsonlBody, 'text/plain');
+
+        if ($response['status'] >= 500 || $response['status'] === 429) {
+            throw new TransientSyncException(
+                __('Typesense import failed with transient HTTP status %1.', $response['status'])
+            );
+        }
 
         $results = [];
         $successCount = 0;
@@ -279,6 +286,25 @@ class TypesenseClient
     }
 
     /**
+     * Delete a synonym rule from a Typesense collection by ID.
+     *
+     * @param string $collectionName
+     * @param string $id
+     * @return bool
+     */
+    public function deleteSynonym(string $collectionName, string $id): bool
+    {
+        try {
+            $endpoint = sprintf('/collections/%s/synonyms/%s', urlencode($collectionName), urlencode($id));
+            $response = $this->request('DELETE', $endpoint);
+            return $response['status'] === 200 || $response['status'] === 404;
+        } catch (\Throwable $e) {
+            $this->logger->warning('[MageCopilot_EdgeSync] Failed to delete synonym: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Upsert a curation override rule into a Typesense collection.
      *
      * @param string $collectionName
@@ -405,7 +431,9 @@ class TypesenseClient
         $error = curl_error($ch);
 
         if ($responseBody === false) {
-            throw new \RuntimeException(sprintf('Typesense HTTP request failed to %s: %s', $url, $error));
+            throw new TransientSyncException(
+                __('Typesense HTTP request failed to %1: %2', $url, $error)
+            );
         }
 
         return [
