@@ -19,6 +19,8 @@ All catalog documents are denormalized and structured for sub-millisecond facet 
 - B2B & Tier Pricing: Indexes customer group specific prices, active catalog rules (`catalogrule_product_price`), and tiered quantity breaks.
 - RabbitMQ Topology with DLQ: Uses AMQP message routing with an isolated Dead Letter Exchange (`magecopilot.dlx`) and Dead Letter Queue (`magecopilot_typesense_sync_dlq`) for unprocessable messages.
 - Concurrency Protection: Every document tracks `updated_at_ms` timestamps to ensure older queue messages cannot overwrite newer catalog states.
+- Failure Triage & DLQ Persistence: Separates transient network/5xx/429 failures from poison payloads and records failed sync diagnostics in the `magecopilot_edgesync_failure` table via `FailureRecorder`.
+- Batch Relation Resolution: Resolves child SKUs to parent composite product IDs in bulk (`RelationResolver`) to keep configurable, bundle, and grouped updates consistent under heavy queue load.
 - Clean Purging: Automatically deletes documents from Typesense when products are removed, disabled, or set to not visible individually.
 
 ## Architecture
@@ -67,6 +69,7 @@ In the Magento Admin Panel, go to:
 
 1. General Settings:
    - Enable EdgeSync: Set to Yes.
+   - Endpoint Mode: Displays an automatic status indicator classifying the active host (`managed_cloud`, `self_hosted_local`, or `self_hosted_remote`).
    - Typesense Host: The URL of your Typesense cluster (for example, `http://127.0.0.1:8108`).
    - Typesense API Key: Admin API key for Typesense (stored encrypted using Magento AES-256).
    - Collection Name: Target collection name (defaults to `products`).
@@ -94,12 +97,32 @@ bin/magento queue:consumers:start magecopilot_typesense_product_sync
 bin/magento queue:consumers:start magecopilot_typesense_stock_sync
 ```
 
+EdgeSync also provides dedicated CLI commands for indexing, SKU validation, feed export, seeding, and pipeline diagnostics:
+
+```bash
+# Check Typesense cluster health or run direct indexing (--recreate / --store)
+bin/magento magecopilot:typesense:index --health
+bin/magento magecopilot:typesense:index --recreate --store default
+
+# Audit catalog SKUs against SkuCharsetPolicy (control chars and length)
+bin/magento magecopilot:edgesync:sku-charset-report
+
+# Export Google Shopping, Meta, or TikTok feeds directly from Typesense
+bin/magento magecopilot:edgesync:feed:export --channel all --store default
+
+# Test real-time RabbitMQ stock sync for a specific SKU (--direct or --publish-only)
+bin/magento magecopilot:test:stock-sync SKU-001 --direct
+
+# Seed sample categories, B2B customers, and catalog products
+bin/magento magecopilot:seed:catalog --count 50
+```
+
 ## Testing
 
 Run unit tests via PHPUnit:
 
 ```bash
-vendor/bin/phpunit -c dev/tests/unit/phpunit.xml app/code/MageCopilot/EdgeSync/Test/Unit
+vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist app/code/MageCopilot/EdgeSync/Test/Unit
 ```
 
 Run static analysis:
